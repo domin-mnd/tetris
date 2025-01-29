@@ -1,6 +1,6 @@
 # Compiler and build configuration
 cc := "gcc"
-cflags := "-Wall -Wextra -Werror -std=c23 -D_POSIX_C_SOURCE=199309L -O3 -I" + srcdir + "/include"
+cflags := "-Wall -Wextra -Werror -std=c2x -D_POSIX_C_SOURCE=199309L -O3 -I" + srcdir + "/include"
 ldflags := "-lncurses"
 test_ldflags := "-lcheck"
 gcov_flags := "-fprofile-arcs -ftest-coverage"

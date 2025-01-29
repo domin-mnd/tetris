@@ -58,7 +58,7 @@ jobs:
 
       - name: Install Just
         shell: msys2 {0}
-        run: pacman -S --noconfirm just
+        run: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
       - name: Build with Just
         shell: msys2 {0}
