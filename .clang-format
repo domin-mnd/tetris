@@ -1,0 +1,7 @@
+---
+BasedOnStyle: Google
+LineEnding: LF
+InsertNewlineAtEOF: true
+UseTab: Never
+IndentWidth: 2
+...

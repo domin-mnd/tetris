@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc libncurses-dev
+
+      - name: Install Just
+        run: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+      - name: Build with Just
+        run: just install
+
+      - name: Rename executable
+        run: mv tetris tetris-linux
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tetris-linux
+          path: tetris-linux
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Just
+        run: brew install just
+
+      - name: Build with Just
+        run: just install
+
+      - name: Rename executable
+        run: mv tetris tetris-macos
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tetris-macos
+          path: tetris-macos
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-ncurses
+
+      - name: Install Just
+        shell: msys2 {0}
+        run: pacman -S --noconfirm just
+
+      - name: Build with Just
+        shell: msys2 {0}
+        run: just install
+
+      - name: Rename executable
+        run: mv tetris.exe tetris-windows.exe
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tetris-windows.exe
+          path: tetris-windows.exe
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-macos, build-windows]
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: dist
+
+      - name: Prepare artifacts
+        run: find dist -type f -exec mv {} . \;
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: |
+            tetris-linux
+            tetris-macos
+            tetris-windows.exe
