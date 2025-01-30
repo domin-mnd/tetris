@@ -22,7 +22,7 @@ jobs:
       - name: Rename executable
         run: mv tetris tetris-linux
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: tetris-linux
           path: tetris-linux
@@ -41,7 +41,7 @@ jobs:
       - name: Rename executable
         run: mv tetris tetris-macos
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: tetris-macos
           path: tetris-macos
@@ -51,7 +51,7 @@ jobs:
     needs: [build-linux, build-macos]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: dist
 
