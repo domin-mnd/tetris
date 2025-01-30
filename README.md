@@ -31,7 +31,7 @@ To compile the project run `just install`, it would compile the project and outp
 
 ```sh
 $ just install
-gcc -Wall -Wextra -Werror -std=c11 -D_POSIX_C_SOURCE=199309L -O3 -Isrc/include src/tetris.c src/main.c -o tetris -lncurses
+gcc -Wall -Wextra -Werror -std=c2x -O3 -Isrc/include src/tetris.c src/main.c -o tetris -lncurses
 $ ./tetris
 ```
 
