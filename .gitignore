@@ -53,6 +53,7 @@ dkms.conf
 
 # Tetris
 tetris
+tetris_test
 highscore.txt
 build
 coverage_report
