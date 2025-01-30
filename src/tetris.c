@@ -17,7 +17,10 @@ static const piece_t all_pieces[NUM_PIECES] = {
 void load_high_score(game_info_t *game_state) {
   FILE *file = fopen(HIGHSCORE_TXT, "r");
   if (file) {
-    fscanf(file, "%d", &game_state->high_score);
+    if (fscanf(file, "%d", &game_state->high_score) == 0) {
+      game_state->high_score = 0;
+    }
+
     fclose(file);
   }
 }
@@ -213,8 +216,8 @@ void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {
 
   // Immediate piece spawn and collision check
   spawn_new_piece(game_state);
-  timing->state = check_collision(game_state) ? GAME_STATE_GAME_OVER
-                                              : GAME_STATE_MOVING;
+  timing->state =
+      check_collision(game_state) ? GAME_STATE_GAME_OVER : GAME_STATE_MOVING;
 }
 
 void handle_state_game_over(game_info_t *game_state, game_timing_t *timing) {
