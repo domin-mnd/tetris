@@ -69,6 +69,22 @@ int clear_completed_lines(game_info_t *game_state);
 void update_score(game_info_t *game_state, int lines_cleared);
 void handle_movement(game_info_t *game_state);
 
+void handle_action_left(game_info_t *game_state);
+void handle_action_right(game_info_t *game_state);
+void handle_action_down(game_info_t *game_state);
+void handle_action_rotate(game_info_t *game_state);
+void handle_action_pause(game_info_t *game_state);
+void handle_action_exit(game_info_t *game_state);
+void handle_action_drop(game_info_t *game_state);
+void handle_action_none(game_info_t *game_state);
+typedef void (*action_handler)(game_info_t *);
+
+void handle_state_moving(game_info_t *game_state, game_timing_t *timing);
+void handle_state_attaching(game_info_t *game_state, game_timing_t *timing);
+void handle_state_game_over(game_info_t *game_state, game_timing_t *timing);
+void handle_state_start(game_info_t *game_state, game_timing_t *timing);
+typedef void (*state_handler)(game_info_t *, game_timing_t *);
+
 void handle_input_action(game_info_t *game_state, user_action_t action);
 void handle_input(game_info_t *game_state, user_action_t action);
 game_info_t update_game_state(game_info_t *game_state, game_timing_t *timing);

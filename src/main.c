@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 199309L
 #include <ncurses.h>
 #include <string.h>
 #include <time.h>
@@ -122,29 +121,15 @@ void draw_shadow(const game_info_t *game_state) {
 
 user_action_t get_key_action(int ch) {
   user_action_t action = USER_ACTION_NONE;
-  switch (ch) {
-    case 'q':
-      action = USER_ACTION_EXIT;
-      break;
-    case KEY_LEFT:
-      action = USER_ACTION_LEFT;
-      break;
-    case KEY_RIGHT:
-      action = USER_ACTION_RIGHT;
-      break;
-    case KEY_DOWN:
-      action = USER_ACTION_DOWN;
-      break;
-    case KEY_UP:
-      action = USER_ACTION_ROTATE;
-      break;
-    case 'p':
-      action = USER_ACTION_PAUSE;
-      break;
-    case ' ':
-      action = USER_ACTION_DROP;
-      break;
-  }
+  static const struct {
+    int key;
+    user_action_t action;
+  } map[] = {{'q', USER_ACTION_EXIT},        {KEY_LEFT, USER_ACTION_LEFT},
+             {KEY_RIGHT, USER_ACTION_RIGHT}, {KEY_DOWN, USER_ACTION_DOWN},
+             {KEY_UP, USER_ACTION_ROTATE},   {'p', USER_ACTION_PAUSE},
+             {' ', USER_ACTION_DROP}};
+  for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++)
+    if (ch == map[i].key) action = map[i].action;
   return action;
 }
 

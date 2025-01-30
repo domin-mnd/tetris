@@ -113,56 +113,83 @@ void handle_movement(game_info_t *game_state) {
   game_state->speed = BASE_FALL_INTERVAL / (game_state->level * speed);
 }
 
-void handle_input_action(game_info_t *game_state, user_action_t action) {
-  switch (action) {
-    case USER_ACTION_LEFT:
-      game_state->current_x--;
-      if (check_collision(game_state)) game_state->current_x++;
-      break;
-    case USER_ACTION_RIGHT:
-      game_state->current_x++;
-      if (check_collision(game_state)) game_state->current_x--;
-      break;
-    case USER_ACTION_DOWN:
-      game_state->is_speeding = true;
-      handle_movement(game_state);
-      break;
-    case USER_ACTION_ROTATE:
-      piece_t rotated = game_state->current;
-      for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-          rotated.shape[j][3 - i] = game_state->current.shape[i][j];
+void handle_action_left(game_info_t *game_state) {
+  game_state->current_x--;
+  if (check_collision(game_state)) game_state->current_x++;
+}
 
-      const piece_t original = game_state->current;
-      game_state->current = rotated;
-      if (check_collision(game_state)) game_state->current = original;
-      break;
-    case USER_ACTION_PAUSE:
-      game_state->pause = !game_state->pause;
-      break;
-    case USER_ACTION_EXIT:
-      game_state->is_game_over = true;
-      break;
-    case USER_ACTION_DROP:
-      while (1) {
-        game_state->current_y++;
-        if (check_collision(game_state)) {
-          game_state->current_y--;
-          break;
-        }
-      }
-      lock_piece(game_state);
-      int lines_cleared = clear_completed_lines(game_state);
-      if (lines_cleared > 0) update_score(game_state, lines_cleared);
+void handle_action_right(game_info_t *game_state) {
+  game_state->current_x++;
+  if (check_collision(game_state)) game_state->current_x--;
+}
 
-      spawn_new_piece(game_state);
-      if (check_collision(game_state)) game_state->is_game_over = true;
+void handle_action_down(game_info_t *game_state) {
+  game_state->is_speeding = true;
+  handle_movement(game_state);
+}
+
+void handle_action_rotate(game_info_t *game_state) {
+  piece_t rotated = game_state->current;
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
+      rotated.shape[j][3 - i] = game_state->current.shape[i][j];
+
+  const piece_t original = game_state->current;
+  game_state->current = rotated;
+  if (check_collision(game_state)) game_state->current = original;
+}
+
+void handle_action_pause(game_info_t *game_state) {
+  game_state->pause = !game_state->pause;
+}
+
+void handle_action_exit(game_info_t *game_state) {
+  game_state->is_game_over = true;
+}
+
+void handle_action_drop(game_info_t *game_state) {
+  while (1) {
+    game_state->current_y++;
+    if (check_collision(game_state)) {
+      game_state->current_y--;
       break;
-    default:
-      game_state->is_speeding = false;
-      handle_movement(game_state);
-      break;
+    }
   }
+  lock_piece(game_state);
+  int lines_cleared = clear_completed_lines(game_state);
+  if (lines_cleared > 0) update_score(game_state, lines_cleared);
+
+  spawn_new_piece(game_state);
+  if (check_collision(game_state)) game_state->is_game_over = true;
+}
+
+void handle_action_none(game_info_t *game_state) {
+  game_state->is_speeding = false;
+  handle_movement(game_state);
+}
+
+void handle_input_action(game_info_t *game_state, user_action_t action) {
+  static const struct {
+    user_action_t action;
+    action_handler handler;
+  } dispatch[] = {{USER_ACTION_LEFT, handle_action_left},
+                  {USER_ACTION_RIGHT, handle_action_right},
+                  {USER_ACTION_DOWN, handle_action_down},
+                  {USER_ACTION_ROTATE, handle_action_rotate},
+                  {USER_ACTION_PAUSE, handle_action_pause},
+                  {USER_ACTION_EXIT, handle_action_exit},
+                  {USER_ACTION_DROP, handle_action_drop}};
+
+  action_handler handler = handle_action_none;
+
+  for (size_t i = 0; i < sizeof(dispatch) / sizeof(dispatch[0]); i++) {
+    if (dispatch[i].action == action) {
+      handler = dispatch[i].handler;
+      break;
+    }
+  }
+
+  handler(game_state);
 }
 
 void handle_input(game_info_t *game_state, user_action_t action) {
@@ -171,38 +198,58 @@ void handle_input(game_info_t *game_state, user_action_t action) {
   }
 }
 
-void execute_state(game_info_t *game_state, game_timing_t *timing) {
-  switch (timing->state) {
-    case GAME_STATE_MOVING:
-      game_state->current_y++;
-      if (check_collision(game_state)) {
-        game_state->current_y--;
-        timing->state = GAME_STATE_ATTACHING;
-      }
-      break;
-
-    case GAME_STATE_ATTACHING:
-      lock_piece(game_state);
-      const int lines = clear_completed_lines(game_state);
-      if (lines > 0) update_score(game_state, lines);
-
-      // Immediate piece spawn and collision check
-      spawn_new_piece(game_state);
-      timing->state = check_collision(game_state) ? GAME_STATE_GAME_OVER
-                                                  : GAME_STATE_MOVING;
-      break;
-
-    case GAME_STATE_GAME_OVER:
-      if (game_state->score > game_state->high_score) {
-        game_state->high_score = game_state->score;
-        save_high_score(game_state);
-      }
-      game_state->is_game_over = true;
-      break;
-
-    default:
-      break;
+void handle_state_moving(game_info_t *game_state, game_timing_t *timing) {
+  game_state->current_y++;
+  if (check_collision(game_state)) {
+    game_state->current_y--;
+    timing->state = GAME_STATE_ATTACHING;
   }
+}
+
+void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {
+  lock_piece(game_state);
+  const int lines = clear_completed_lines(game_state);
+  if (lines > 0) update_score(game_state, lines);
+
+  // Immediate piece spawn and collision check
+  spawn_new_piece(game_state);
+  timing->state = check_collision(game_state) ? GAME_STATE_GAME_OVER
+                                              : GAME_STATE_MOVING;
+}
+
+void handle_state_game_over(game_info_t *game_state, game_timing_t *timing) {
+  (void)timing;
+  if (game_state->score > game_state->high_score) {
+    game_state->high_score = game_state->score;
+    save_high_score(game_state);
+  }
+  game_state->is_game_over = true;
+}
+
+void handle_state_start(game_info_t *game_state, game_timing_t *timing) {
+  (void)game_state;
+  (void)timing;
+}
+
+void execute_state(game_info_t *game_state, game_timing_t *timing) {
+  static const struct {
+    game_state_t state;
+    state_handler handler;
+  } dispatch[] = {{GAME_STATE_START, handle_state_start},
+                  {GAME_STATE_MOVING, handle_state_moving},
+                  {GAME_STATE_ATTACHING, handle_state_attaching},
+                  {GAME_STATE_GAME_OVER, handle_state_game_over}};
+
+  state_handler handler = handle_state_start;
+
+  for (size_t i = 0; i < sizeof(dispatch) / sizeof(dispatch[0]); i++) {
+    if (dispatch[i].state == timing->state) {
+      handler = dispatch[i].handler;
+      break;
+    }
+  }
+
+  handler(game_state, timing);
 }
 
 game_info_t update_game_state(game_info_t *game_state, game_timing_t *timing) {
