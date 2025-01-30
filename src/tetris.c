@@ -14,7 +14,7 @@ static const piece_t all_pieces[NUM_PIECES] = {
     {6, {{0, 0, 0, 0}, {0, 1, 1, 0}, {1, 1, 0, 0}, {0, 0, 0, 0}}},   // S
     {7, {{0, 0, 0, 0}, {1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 0, 0}}}};  // Z
 
-void load_high_score(game_info_t *game_state) {
+static void load_high_score(game_info_t *game_state) {
   FILE *file = fopen(HIGHSCORE_TXT, "r");
   if (file) {
     if (fscanf(file, "%d", &game_state->high_score) == 0) {
@@ -25,7 +25,7 @@ void load_high_score(game_info_t *game_state) {
   }
 }
 
-void save_high_score(const game_info_t *game_state) {
+static void save_high_score(const game_info_t *game_state) {
   FILE *file = fopen(HIGHSCORE_TXT, "w");
   if (file) {
     fprintf(file, "%d", game_state->high_score);
@@ -33,28 +33,7 @@ void save_high_score(const game_info_t *game_state) {
   }
 }
 
-void compute_shadow_position(game_info_t *game_state) {
-  game_info_t shadow = *game_state;
-  while (1) {
-    shadow.current_y++;
-    if (check_collision(&shadow)) {
-      shadow.current_y--;
-      break;
-    }
-  }
-  game_state->shadow_x = shadow.current_x;
-  game_state->shadow_y = shadow.current_y;
-}
-
-void spawn_new_piece(game_info_t *game_state) {
-  game_state->current = game_state->next;
-  game_state->next = all_pieces[rand() % NUM_PIECES];
-  game_state->current_x = FIELD_WIDTH / 2 - 2;
-  game_state->current_y = 0;
-  compute_shadow_position(game_state);
-}
-
-bool check_collision(const game_info_t *game_state) {
+static bool check_collision(const game_info_t *game_state) {
   bool flag = false;
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
@@ -74,7 +53,28 @@ bool check_collision(const game_info_t *game_state) {
   return flag;
 }
 
-void lock_piece(game_info_t *game_state) {
+static void compute_shadow_position(game_info_t *game_state) {
+  game_info_t shadow = *game_state;
+  while (1) {
+    shadow.current_y++;
+    if (check_collision(&shadow)) {
+      shadow.current_y--;
+      break;
+    }
+  }
+  game_state->shadow_x = shadow.current_x;
+  game_state->shadow_y = shadow.current_y;
+}
+
+static void spawn_new_piece(game_info_t *game_state) {
+  game_state->current = game_state->next;
+  game_state->next = all_pieces[rand() % NUM_PIECES];
+  game_state->current_x = FIELD_WIDTH / 2 - 2;
+  game_state->current_y = 0;
+  compute_shadow_position(game_state);
+}
+
+static void lock_piece(game_info_t *game_state) {
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
       if (!game_state->current.shape[i][j]) continue;
@@ -89,7 +89,7 @@ void lock_piece(game_info_t *game_state) {
   }
 }
 
-int clear_completed_lines(game_info_t *game_state) {
+static int clear_completed_lines(game_info_t *game_state) {
   int lines_cleared = 0;
 
   for (int row = FIELD_HEIGHT - 1; row >= 0; row--) {
@@ -118,36 +118,36 @@ int clear_completed_lines(game_info_t *game_state) {
   return lines_cleared;
 }
 
-void update_score(game_info_t *game_state, int lines_cleared) {
+static void update_score(game_info_t *game_state, int lines_cleared) {
   const int points[] = {0, 100, 300, 700, 1500};
   game_state->score += points[lines_cleared] * game_state->level;
   game_state->level = (game_state->score / 600) + 1;
   game_state->level = game_state->level > 10 ? 10 : game_state->level;
 }
 
-void handle_movement(game_info_t *game_state) {
+static void handle_movement(game_info_t *game_state) {
   const int speed = game_state->is_speeding ? SPEED_MULTIPLIER : 1;
   game_state->speed = BASE_FALL_INTERVAL / (game_state->level * speed);
 }
 
-void handle_action_left(game_info_t *game_state) {
+static void handle_action_left(game_info_t *game_state) {
   game_state->current_x--;
   if (check_collision(game_state)) game_state->current_x++;
   compute_shadow_position(game_state);
 }
 
-void handle_action_right(game_info_t *game_state) {
+static void handle_action_right(game_info_t *game_state) {
   game_state->current_x++;
   if (check_collision(game_state)) game_state->current_x--;
   compute_shadow_position(game_state);
 }
 
-void handle_action_down(game_info_t *game_state) {
+static void handle_action_down(game_info_t *game_state) {
   game_state->is_speeding = true;
   handle_movement(game_state);
 }
 
-void handle_action_rotate(game_info_t *game_state) {
+static void handle_action_rotate(game_info_t *game_state) {
   piece_t rotated = game_state->current;
   for (int i = 0; i < 4; i++)
     for (int j = 0; j < 4; j++)
@@ -159,15 +159,15 @@ void handle_action_rotate(game_info_t *game_state) {
   compute_shadow_position(game_state);
 }
 
-void handle_action_pause(game_info_t *game_state) {
+static void handle_action_pause(game_info_t *game_state) {
   game_state->pause = !game_state->pause;
 }
 
-void handle_action_exit(game_info_t *game_state) {
+static void handle_action_exit(game_info_t *game_state) {
   game_state->is_game_over = true;
 }
 
-void handle_action_drop(game_info_t *game_state) {
+static void handle_action_drop(game_info_t *game_state) {
   while (1) {
     game_state->current_y++;
     if (check_collision(game_state)) {
@@ -183,12 +183,13 @@ void handle_action_drop(game_info_t *game_state) {
   if (check_collision(game_state)) game_state->is_game_over = true;
 }
 
-void handle_action_none(game_info_t *game_state) {
+static void handle_action_none(game_info_t *game_state) {
   game_state->is_speeding = false;
   handle_movement(game_state);
 }
 
-void handle_input_action(game_info_t *game_state, user_action_t action) {
+typedef void (*action_handler)(game_info_t *);
+static void handle_input_action(game_info_t *game_state, user_action_t action) {
   static const struct {
     user_action_t action;
     action_handler handler;
@@ -218,7 +219,7 @@ void handle_input(game_info_t *game_state, user_action_t action) {
   }
 }
 
-void handle_state_moving(game_info_t *game_state, game_timing_t *timing) {
+static void handle_state_moving(game_info_t *game_state, game_timing_t *timing) {
   game_state->current_y++;
   if (check_collision(game_state)) {
     game_state->current_y--;
@@ -227,7 +228,7 @@ void handle_state_moving(game_info_t *game_state, game_timing_t *timing) {
   compute_shadow_position(game_state);
 }
 
-void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {
+static void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {
   lock_piece(game_state);
   const int lines = clear_completed_lines(game_state);
   if (lines > 0) update_score(game_state, lines);
@@ -238,7 +239,7 @@ void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {
       check_collision(game_state) ? GAME_STATE_GAME_OVER : GAME_STATE_MOVING;
 }
 
-void handle_state_game_over(game_info_t *game_state, game_timing_t *timing) {
+static void handle_state_game_over(game_info_t *game_state, game_timing_t *timing) {
   (void)timing;
   if (game_state->score > game_state->high_score) {
     game_state->high_score = game_state->score;
@@ -247,12 +248,13 @@ void handle_state_game_over(game_info_t *game_state, game_timing_t *timing) {
   game_state->is_game_over = true;
 }
 
-void handle_state_start(game_info_t *game_state, game_timing_t *timing) {
+static void handle_state_start(game_info_t *game_state, game_timing_t *timing) {
   (void)game_state;
   (void)timing;
 }
 
-void execute_state(game_info_t *game_state, game_timing_t *timing) {
+typedef void (*state_handler)(game_info_t *, game_timing_t *);
+static void execute_state(game_info_t *game_state, game_timing_t *timing) {
   static const struct {
     game_state_t state;
     state_handler handler;
