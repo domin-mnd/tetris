@@ -104,15 +104,11 @@ void draw_piece(int y, int x, const game_info_t *game_state) {
 }
 
 void draw_shadow(const game_info_t *game_state) {
-  game_info_t shadow = *game_state;
-  while (!check_collision(&shadow)) shadow.current_y++;
-  shadow.current_y--;
-
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      if (shadow.current.shape[i][j]) {
-        int y = shadow.current_y + i;
-        int x = shadow.current_x + j;
+      if (game_state->current.shape[i][j]) {
+        int y = game_state->shadow_y + i;
+        int x = game_state->shadow_x + j;
         draw_block(y, x, 8);
       }
     }

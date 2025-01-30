@@ -33,11 +33,25 @@ void save_high_score(const game_info_t *game_state) {
   }
 }
 
+void compute_shadow_position(game_info_t *game_state) {
+  game_info_t shadow = *game_state;
+  while (1) {
+    shadow.current_y++;
+    if (check_collision(&shadow)) {
+      shadow.current_y--;
+      break;
+    }
+  }
+  game_state->shadow_x = shadow.current_x;
+  game_state->shadow_y = shadow.current_y;
+}
+
 void spawn_new_piece(game_info_t *game_state) {
   game_state->current = game_state->next;
   game_state->next = all_pieces[rand() % NUM_PIECES];
   game_state->current_x = FIELD_WIDTH / 2 - 2;
   game_state->current_y = 0;
+  compute_shadow_position(game_state);
 }
 
 bool check_collision(const game_info_t *game_state) {
@@ -119,11 +133,13 @@ void handle_movement(game_info_t *game_state) {
 void handle_action_left(game_info_t *game_state) {
   game_state->current_x--;
   if (check_collision(game_state)) game_state->current_x++;
+  compute_shadow_position(game_state);
 }
 
 void handle_action_right(game_info_t *game_state) {
   game_state->current_x++;
   if (check_collision(game_state)) game_state->current_x--;
+  compute_shadow_position(game_state);
 }
 
 void handle_action_down(game_info_t *game_state) {
@@ -140,6 +156,7 @@ void handle_action_rotate(game_info_t *game_state) {
   const piece_t original = game_state->current;
   game_state->current = rotated;
   if (check_collision(game_state)) game_state->current = original;
+  compute_shadow_position(game_state);
 }
 
 void handle_action_pause(game_info_t *game_state) {
@@ -207,6 +224,7 @@ void handle_state_moving(game_info_t *game_state, game_timing_t *timing) {
     game_state->current_y--;
     timing->state = GAME_STATE_ATTACHING;
   }
+  compute_shadow_position(game_state);
 }
 
 void handle_state_attaching(game_info_t *game_state, game_timing_t *timing) {

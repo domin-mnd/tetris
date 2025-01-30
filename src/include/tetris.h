@@ -46,6 +46,8 @@ typedef struct {
   piece_t current;
   int current_x;
   int current_y;
+  int shadow_x;
+  int shadow_y;
   int score;
   int high_score;
   int level;
@@ -62,6 +64,7 @@ typedef struct {
 
 void load_high_score(game_info_t *game_state);
 void save_high_score(const game_info_t *game_state);
+void compute_shadow_position(game_info_t *game_state);
 void spawn_new_piece(game_info_t *game_state);
 bool check_collision(const game_info_t *game_state);
 void lock_piece(game_info_t *game_state);
